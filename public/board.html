@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>王家任务看板</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+.navbar {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.navbar a {
+  padding: 8px 18px;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  transition: background 0.2s;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.navbar a:hover { background: rgba(255,255,255,0.2); }
+.navbar a.active {
+  background: rgba(59,130,246,0.3);
+  border-color: #3b82f6;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  color: #fff;
+  min-height: 100vh;
+  padding: 20px;
+}
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+.header h1 { font-size: 28px; margin-bottom: 8px; }
+.header p { color: #aaa; font-size: 14px; }
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.column {
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.column-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  font-size: 16px;
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot.todo { background: #888; }
+.dot.doing { background: #f59e0b; }
+.dot.review { background: #3b82f6; }
+.dot.done { background: #10b981; }
+.task {
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.task:hover { background: rgba(255,255,255,0.12); }
+.task.todo { border-left-color: #888; }
+.task.doing { border-left-color: #f59e0b; }
+.task.review { border-left-color: #3b82f6; }
+.task.done { border-left-color: #10b981; opacity: 0.7; }
+.task-title { font-weight: 500; margin-bottom: 6px; }
+.task-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #aaa;
+}
+.assignee {
+  background: rgba(255,255,255,0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.progress-fill.todo { width: 0%; background: #888; }
+.progress-fill.doing { width: 50%; background: #f59e0b; }
+.progress-fill.review { width: 80%; background: #3b82f6; }
+.progress-fill.done { width: 100%; background: #10b981; }
+.overall-progress {
+  max-width: 1200px;
+  margin: 0 auto 30px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+.overall-progress h2 { font-size: 18px; margin-bottom: 12px; }
+.progress-ring {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto;
+  position: relative;
+}
+.progress-ring svg { transform: rotate(-90deg); }
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  font-weight: bold;
+}
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 16px;
+}
+.stat { text-align: center; }
+.stat-number { font-size: 24px; font-weight: bold; }
+.stat-label { font-size: 12px; color: #aaa; margin-top: 4px; }
+.loading { text-align: center; padding: 60px; color: #aaa; }
+.error { text-align: center; padding: 60px; color: #ef4444; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="navbar">
+    <a href="/">🏠 首页</a>
+    <a href="/playground">🤖 AI工坊</a>
+    <a href="/training">🎓 师资培训</a>
+    <a href="/tools">🧰 AI工具矩阵</a>
+    <a href="/courses">📚 课程体系</a>
+    <a href="/board.html" class="active">📋 任务看板</a>
+    <a href="/about">ℹ️ 关于我们</a>
+    <a href="/login">👤 登录</a>
+  </div>
+  <h1>🛠️ 网站建设 v1.0 任务看板</h1>
+  <p>CTO: 王千里 | 项目总进度</p>
+  <p style="margin-top:8px; font-size:12px; color:#888;">
+    数据来自 <a href="http://100.119.92.94:9090/board" target="_blank" style="color:#3b82f6;">王家小黑板</a> | 
+    格式: <code style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px;">- [ ] 任务名 @负责人</code> 或 <code style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px;">任务名 [50%] @负责人</code>
+  </p>
+</div>
+
+<div class="overall-progress">
+  <h2>总进度</h2>
+  <div class="progress-ring">
+    <svg width="120" height="120">
+      <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
+      <circle id="overall-circle" cx="60" cy="60" r="54" fill="none" stroke="#10b981" stroke-width="8"
+        stroke-dasharray="339.292" stroke-dashoffset="339.292" stroke-linecap="round"/>
+    </svg>
+    <div class="progress-text" id="overall-text">0%</div>
+  </div>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-number" id="stat-total">0</div>
+      <div class="stat-label">总任务</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number" id="stat-done">0</div>
+      <div class="stat-label">已完成</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number" id="stat-doing">0</div>
+      <div class="stat-label">进行中</div>
+    </div>
+  </div>
+</div>
+
+<div id="board" class="board">
+  <div class="loading">加载中...</div>
+</div>
+
+<script>
+// 默认任务数据（小黑板API不可用时降级显示）
+const DEFAULT_TASKS = [
+  { id: 1, title: "恢复 Next.js 多页面版本", status: "done", assignee: "王万维", progress: 100 },
+  { id: 2, title: "更新 DNS ccav.com 指向新服务器", status: "todo", assignee: "王万里", progress: 0 },
+  { id: 3, title: "修复 AI工坊 输入框对接可灵API", status: "todo", assignee: "王千里", progress: 0 },
+  { id: 4, title: "修复 师资培训 5天课程展开", status: "todo", assignee: "王千里", progress: 0 },
+  { id: 5, title: "修复 课程卡片 L1-L6 可点击", status: "todo", assignee: "王千里", progress: 0 },
+  { id: 6, title: "修复 手机端汉堡菜单", status: "todo", assignee: "王千里", progress: 0 },
+  { id: 7, title: "修复 底部版权IP显示", status: "todo", assignee: "王千里", progress: 0 },
+  { id: 8, title: "全链路部署测试", status: "todo", assignee: "王万维", progress: 0 },
+];
+
+// 从小黑板消息解析任务数据
+function parseTasksFromBoard(messages) {
+  const tasks = [];
+  let taskId = 100; // 从100开始避免和默认任务冲突
+  
+  messages.forEach(msg => {
+    const content = msg.content || msg.text || '';
+    
+    // 匹配任务格式：- [ ] 任务名 @负责人 或 - [x] 任务名 @负责人
+    const taskRegex = /^\s*-\s*\[([ x])\]\s*(.+?)(?:\s*@(\S+))?\s*$/im;
+    const match = content.match(taskRegex);
+    
+    if (match) {
+      const isDone = match[1].toLowerCase() === 'x';
+      const title = match[2].trim();
+      const assignee = match[3] || '待分配';
+      
+      tasks.push({
+        id: taskId++,
+        title: title,
+        status: isDone ? 'done' : 'todo',
+        assignee: assignee,
+        progress: isDone ? 100 : 0
+      });
+    }
+    
+    // 也匹配进度格式：任务名 [50%] @负责人
+    const progressRegex = /^(.+?)\s*\[(\d+)%\]\s*(?:@(\S+))?\s*$/;
+    const pMatch = content.match(progressRegex);
+    if (pMatch && !match) {
+      tasks.push({
+        id: taskId++,
+        title: pMatch[1].trim(),
+        status: parseInt(pMatch[2]) === 100 ? 'done' : (parseInt(pMatch[2]) > 0 ? 'doing' : 'todo'),
+        assignee: pMatch[3] || '待分配',
+        progress: parseInt(pMatch[2])
+      });
+    }
+  });
+  
+  return tasks.length > 0 ? tasks : DEFAULT_TASKS;
+}
+
+const COLUMNS = [
+  { key: "todo", label: "📋 待办", class: "todo" },
+  { key: "doing", label: "🔨 进行中", class: "doing" },
+  { key: "review", label: "👀 审核中", class: "review" },
+  { key: "done", label: "✅ 已完成", class: "done" },
+];
+
+function renderBoard(tasks) {
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+
+  // 统计
+  const total = tasks.length;
+  const done = tasks.filter(t => t.status === "done").length;
+  const doing = tasks.filter(t => t.status === "doing").length;
+  const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  document.getElementById("stat-total").textContent = total;
+  document.getElementById("stat-done").textContent = done;
+  document.getElementById("stat-doing").textContent = doing;
+  document.getElementById("overall-text").textContent = percent + "%";
+
+  const circumference = 2 * Math.PI * 54;
+  const offset = circumference - (percent / 100) * circumference;
+  document.getElementById("overall-circle").style.strokeDashoffset = offset;
+
+  // 渲染列
+  COLUMNS.forEach(col => {
+    const colTasks = tasks.filter(t => t.status === col.key);
+    const colEl = document.createElement("div");
+    colEl.className = "column";
+    colEl.innerHTML = `
+      <div class="column-header">
+        <span class="dot ${col.class}"></span>
+        ${col.label} (${colTasks.length})
+      </div>
+      ${colTasks.map(task => `
+        <div class="task ${task.status}">
+          <div class="task-title">${task.title}</div>
+          <div class="task-meta">
+            <span class="assignee">${task.assignee}</span>
+            <span>${task.progress}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill ${task.status}" style="width:${task.progress}%"></div>
+          </div>
+        </div>
+      `).join("")}
+    `;
+    board.appendChild(colEl);
+  });
+}
+
+// 加载数据
+async function loadTasks() {
+  try {
+    // 先尝试读取小黑板API
+    const response = await fetch('http://100.119.92.94:9090/board/raw', {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+    
+    if (!response.ok) throw new Error('API返回错误');
+    
+    const data = await response.json();
+    const messages = Array.isArray(data) ? data : (data.messages || data.board || []);
+    const tasks = parseTasksFromBoard(messages);
+    
+    renderBoard(tasks);
+  } catch (err) {
+    console.log('小黑板API不可用，使用默认任务:', err.message);
+    renderBoard(DEFAULT_TASKS);
+  }
+}
+
+loadTasks();
+</script>
+</body>
+</html>

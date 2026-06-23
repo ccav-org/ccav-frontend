@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作品墙 Phase A — 2026-06-02 进度总览</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #e0e0e0; line-height: 1.6; padding: 24px; }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.8rem; color: #e8d5b7; margin-bottom: 4px; }
+  .date { color: #888; font-size: 0.9rem; margin-bottom: 24px; }
+  h2 { font-size: 1.2rem; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid #333; }
+  .card { background: #16213e; border-radius: 10px; padding: 16px; margin-bottom: 12px; border-left: 4px solid #555; }
+  .card.master { border-left-color: #e8d5b7; }
+  .card.cto { border-left-color: #0d8a9a; }
+  .card.cio { border-left-color: #8b1a1a; }
+  .status { display: inline-block; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; margin-left: 6px; vertical-align: middle; }
+  .green { background: #1b5e20; color: #a5d6a7; }
+  .yellow { background: #7c5e00; color: #fff3c4; }
+  .red { background: #7f1d1d; color: #ffcdd2; }
+  .gray { background: #424242; color: #bdbdbd; }
+  .card-title { font-weight: 600; font-size: 1rem; margin-bottom: 8px; }
+  .card-title .name { color: #e8d5b7; }
+  .card-title .role { color: #888; font-weight: 400; }
+  .items { list-style: none; }
+  .items li { padding: 4px 0; font-size: 0.9rem; }
+  .items li::before { content: '• '; color: #888; }
+  .items li.done { color: #a5d6a7; }
+  .items li.done::before { content: '✅ '; }
+  .items li.pending { color: #fff3c4; }
+  .items li.pending::before { content: '⏳ '; }
+  .items li.blocked { color: #ffcdd2; }
+  .items li.blocked::before { content: '🔴 '; }
+  .items li.info { color: #90caf9; }
+  .items li.info::before { content: 'ℹ️ '; }
+  .deps { background: #0d1b2a; border-radius: 8px; padding: 12px; margin-top: 12px; font-size: 0.85rem; }
+  .deps h3 { color: #90caf9; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .seq { margin-top: 24px; }
+  .step { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; margin-bottom: 8px; border-radius: 8px; background: #16213e; font-size: 0.9rem; }
+  .step .num { width: 24px; height: 24px; border-radius: 50%; background: #e8d5b7; color: #1a1a2e; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8rem; }
+  .step .label { flex: 1; }
+  .step .owner { font-size: 0.8rem; color: #888; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🖼️ 作品墙 · Phase A 进度总览</h1>
+<div class="date">2026-06-02 19:00 | 下一步：Phase A Mock→真API 切换</div>
+
+<!-- 三兄弟卡片 -->
+<h2>👥 三兄弟分工</h2>
+
+<div class="card master">
+  <div class="card-title"><span class="name">王万维</span> <span class="role">/ 大哥 · 前端 (CEO)</span></div>
+  <ul class="items">
+    <li class="done">Phase A — 多维筛选器 UI（3轴折叠+清除+兼容旧字段）</li>
+    <li class="done">npm run build ✓ | git tag build/v20260602-143203</li>
+    <li class="done">api.ts — GalleryItem 加 tech_type/scene/style 字段，getGalleryItems(opts) 签名</li>
+    <li class="pending">api.ts — 改真 API：Mock 切到 GET /api/gallery + /filters</li>
+    <li class="pending">Phase B — 详情页 route /gallery/:id</li>
+    <li class="pending">Phase C — 积分锁前端 UI</li>
+    <li class="pending">Phase D — 跳转闭环</li>
+    <li class="pending">看板 JSON 化挂到 /kanban</li>
+  </ul>
+  <div class="deps">
+    <h3>⏳ 依赖</h3>
+    等三弟 Mock 同步⑥后推 Phase B<br>
+    等 Phase B 完再推 Phase C/D
+  </div>
+</div>
+
+<div class="card cto">
+  <div class="card-title"><span class="name">王千里</span> <span class="role">/ 二哥 · 审核 (CTO)</span></div>
+  <ul class="items">
+    <li class="done">curl 验证后端所有新接口（gallery + filters + unlock）</li>
+    <li class="done">确认 Phase A 前端构建通过</li>
+    <li class="info">Hermes 已重启（王万里 pm2 restart）— 连接池清空 ✅</li>
+    <li class="pending">审核桌面看板《作品墙开发看板.md》→ 通过后大哥转 JSON 挂 /kanban</li>
+    <li class="pending">Phase B 前端上线前 code review + 真 API 端到端验证</li>
+  </ul>
+</div>
+
+<div class="card cio">
+  <div class="card-title"><span class="name">王万里</span> <span class="role">/ 三弟 · 后端 (CIO)</span></div>
+  <ul class="items">
+    <li class="done">① DB 字段：添加 tech_type / scene / style</li>
+    <li class="done">② API 多维度交叉筛选 + GET /api/gallery/filters 端点</li>
+    <li class="done">③ POST /api/gallery/:id/unlock 积分锁接口</li>
+    <li class="done">④ 防刷逻辑</li>
+    <li class="done">⑤ 创作者分成</li>
+    <li class="done">⑦ 12 条旧数据填 scene/style（5场景×5风格全覆盖）</li>
+    <li class="pending">⑥ Mock 同步：等大哥出 api.ts 后更新 Mock 数据</li>
+    <li class="info">小黑板：Nginx 反代 https://43.159.170.161/board/ 正常读写</li>
+  </ul>
+</div>
+
+<!-- 分类统一 -->
+<h2>📋 分类词汇统一（已对齐）</h2>
+<div class="card" style="border-left-color: #4caf50;">
+  <ul class="items">
+    <li class="done">大哥前端定义：场景=短片故事/社交媒体/商业广告/音乐MV/教学演示</li>
+    <li class="done">大哥前端定义：风格=国风水墨/科幻赛博/古风典雅/日系动漫/写实胶片</li>
+    <li class="done">三弟后端 filters API：与前者完全对齐 ✅</li>
+    <li class="done">12条旧数据赋值：已按上述分类填完 ✅</li>
+  </ul>
+</div>
+
+<!-- 明日开工序列 -->
+<h2>🔜 明日开工序列</h2>
+
+<div class="seq">
+  <div class="step">
+    <div class="num">1</div>
+    <div class="label">api.ts Mock→真API — 改 getGalleryItems() 调后端 GET /api/gallery + /filters</div>
+    <div class="owner">大哥</div>
+  </div>
+  <div class="step">
+    <div class="num">2</div>
+    <div class="label">Mock 数据同步 — 前端 API 层改好后三弟更新 Mock</div>
+    <div class="owner">三弟</div>
+  </div>
+  <div class="step">
+    <div class="num">3</div>
+    <div class="label">Phase B 详情页 /gallery/:id — 注意前端路由与后端 API /api/gallery/:id 路径不冲突</div>
+    <div class="owner">大哥</div>
+  </div>
+  <div class="step">
+    <div class="num">4</div>
+    <div class="label">代码审查 + 端到端验证（curl + F12）</div>
+    <div class="owner">二哥</div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
