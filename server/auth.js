@@ -1,6 +1,14 @@
 /**
  * ccav.com Phase 2 — 用户认证模块
  * 手机号注册/登录 + JWT + 短信验证码
+ *
+ * ⚠️ BOUNDARY: Express 本地 auth (legacy-local-auth)
+ * 此文件的 auth 仅服务 Express 本地 SQLite 功能：
+ *   - gallery likes/dislikes/comments/unlock
+ *   - courses progress/quiz
+ * 生产环境 nginx 将 /api/auth/* 路由到 FastAPI 8080。
+ * Express /api/auth/* 不对外暴露，仅 admin 管理后台使用这个 Express 端。
+ * 详见 README Phase2-III-B Auth Boundary 章节。
  */
 import { Router } from 'express';
 import crypto from 'crypto';
@@ -41,6 +49,9 @@ function generateToken(user) {
 }
 
 // ============ Auth 中间件 ============
+// ⚠️ BOUNDARY: 此中间件只验证 Express JWT（由 /api/auth/login 签发），
+// 不验证 FastAPI 8080 签发的 token。两个 auth 系统 token 不同源。
+
 
 export function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -96,7 +107,9 @@ router.post('/send-code', (req, res) => {
   }
 });
 
-// POST /api/auth/register — 手机号注册
+// @deprecated legacy-local-auth
+// 仅 admin 后台使用此 Express 注册端点。
+// 前台用户注册走 FastAPI 8080 (/api/public/register)。
 router.post('/register', (req, res) => {
   try {
     const { phone, password, code, country_code, display_name } = req.body;
@@ -148,7 +161,9 @@ router.post('/register', (req, res) => {
   }
 });
 
-// POST /api/auth/login — 手机号登录
+// @deprecated legacy-local-auth
+// 仅 admin 后台及 AuthProvider 组件使用此 Express 登录端点。
+// 前台用户登录走 FastAPI 8080 (/api/public/login)。
 router.post('/login', (req, res) => {
   try {
     const { phone, password } = req.body;

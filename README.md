@@ -79,10 +79,41 @@ cd server && npm install && npm run dev
 - `src/lib/klingApi.ts` 提供浏览器端直接调用可灵 API 的客户端库，密钥存储于 `localStorage`
 - **⚠️ 仅限开发/原型验证**——生产环境应通过后端 `/api/kling/*` 代理调用，不可在前端暴露 API 密钥
 
+---
+
+## Phase2-III-B: Auth Boundary (auth 双系统)
+
+ccav-frontend 当前存在**两套用户认证系统**，属可控 dual auth 状态：
+
+| 系统 | 角色 | 位置 | Token 签发者 |
+|:---|:---|:---|:---|
+| **FastAPI 8080** (生产) | 前台用户登录 | `/api/public/login` / `/api/public/register` | FastAPI 签发 |
+| **Express 3001** (本地) | Admin 管理后台 + Gallery/Courses 保护路由 | `/api/auth/login` (Express) | Express JWT 签发 |
+
+### Dual Auth 边界规则
+
+- **前台用户** (`/auth/login`, `/auth/register`) → 走 FastAPI `/api/public/*`，与 Express auth **无关**
+- **Admin 后台** (`/admin/login`) → 走 Express `/api/auth/login`
+- **AuthProvider 组件** (`auth.tsx`) → 走 Express `/api/auth/*`，用于 gallery/courses 保护路由
+- **Gallery/Courses 保护路由** (like/dislike/unlock/progress/quiz) → 使用 Express JWT（authMiddleware）
+- **Gallery 详情页** → 可选解析 token 展示用户态度（无 token 也正常返回）
+
+### 关键约束
+
+- Express 的 `/api/auth/*` 在 nginx 生产环境中**不对外暴露**（/api/auth/* 指向 FastAPI）
+- 两套 token 互不相认，用户表和密码哈希各自独立
+- **短期不合并** — 等 Express 保护功能（gallery/courses）迁移到新后端后再清理
+- `server/auth.js` 中的 login/register 标注为 `@deprecated legacy-local-auth`
+
+---
+
 ## 待办 (未来阶段)
 
-- [ ] server/ 后端拆分为独立仓库
-- [ ] courseData.ts 改为 API 获取
-- [ ] S6: 添加 .gitignore safety rules (tar.gz, .bak, *.db 等)
-- [ ] 清理 lint 预存问题
-- [ ] API 数据迁移与生产切换
+| 待办 | 优先级 | 依赖 |
+|:---|:---:|:---|
+| server/ 后端拆分为独立仓库 | P2 | — |
+| courseData.ts 改为 API 获取 | P2 | — |
+| Auth 双系统清理（Express auth 删除/fastapi 统一） | P3 | gallery/courses 迁移完成后 |
+| S6: 添加 .gitignore safety rules (tar.gz, .bak, *.db 等) | P3 | — |
+| 清理 lint 预存问题 | P4 | — |
+| API 数据迁移与生产切换 | P3 | 老三确认 nginx 路由 |
