@@ -9,8 +9,17 @@ import db from './db.js';
 
 const router = Router();
 
-// JWT Secret — 生产环境应从环境变量读取
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
+// JWT Secret — 必须通过环境变量设置
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('');
+  console.error('❌ JWT_SECRET 环境变量未设置');
+  console.error('   生产环境必须使用固定密钥，否则每次重启会导致所有已签发 token 失效。');
+  console.error('   开发环境可用任意 32 字符以上字符串。');
+  console.error('   设置方式: JWT_SECRET=your-secret-here node server.mjs');
+  console.error('');
+  process.exit(1);
+}
 const JWT_EXPIRES = '7d';
 
 // ============ 工具函数 ============
