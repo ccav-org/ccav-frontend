@@ -186,6 +186,18 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_gallery_category ON gallery(category);
   CREATE INDEX IF NOT EXISTS idx_gallery_comments_gallery ON gallery_comments(gallery_id);
   CREATE INDEX IF NOT EXISTS idx_gallery_likes_gallery ON gallery_likes(gallery_id);
+
+  -- ============ 课时评论 ============
+  CREATE TABLE IF NOT EXISTS lesson_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lesson_key TEXT NOT NULL,
+    author TEXT NOT NULL DEFAULT '匿名学员',
+    content TEXT NOT NULL,
+    likes INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_lesson_comments_lesson ON lesson_comments(lesson_key, created_at DESC);
 `);
 
 // === Phase C: Gallery unlock (积分锁) ===
