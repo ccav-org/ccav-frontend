@@ -591,6 +591,7 @@ createServer(app).listen(PORT, () => {
   const warnings = [];
   if (!CONFIG.kimi.apiKey) warnings.push('⚠️ KIMI_API_KEY 未设置');
   if (!CONFIG.kling.accessKey) warnings.push('⚠️ KLING_ACCESS_KEY 未设置');
+  if (!CONFIG.replicate.apiKey) warnings.push('⚠️ REPLICATE_API_KEY 未设置');
 
   console.log(`\n🔌 ccav.com API 服务已启动`);
   console.log(`   端口: ${PORT}`);

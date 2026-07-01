@@ -1,6 +1,7 @@
 /**
  * 可灵AI API 客户端调用库
  * 所有调用在浏览器端完成，密钥只存localStorage
+ * @deprecated 仅限开发/原型验证。生产环境请使用后端 /api/kling/* 代理调用，不可在前端暴露 API 密钥。
  */
 
 export interface KlingCredentials {
