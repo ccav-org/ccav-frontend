@@ -12,21 +12,28 @@
  */
 
 import { Router } from 'express';
+import jwt from 'jsonwebtoken';
 import db from './db.js';
+import './models.mjs';          // 确保 gallery 扩展表已创建
 import { authMiddleware } from './auth.js';
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const router = Router();
 
-// 辅助：统一格式化作品行（含用户的态度）
+// 辅助：统一格式化作品行（含用户的态度和解锁状态）
 function formatGalleryItem(row, userId = null) {
   let liked = false;
   let disliked = false;
+  let unlocked = false;
 
   if (userId) {
     const likeRow = db.prepare('SELECT id FROM gallery_likes WHERE gallery_id = ? AND user_id = ?').get(row.id, userId);
     if (likeRow) liked = true;
     const dislikeRow = db.prepare('SELECT id FROM gallery_dislikes WHERE gallery_id = ? AND user_id = ?').get(row.id, userId);
     if (dislikeRow) disliked = true;
+    const unlockRow = db.prepare('SELECT id FROM gallery_unlocks WHERE gallery_id = ? AND user_id = ?').get(row.id, userId);
+    if (unlockRow) unlocked = true;
   }
 
   // 取评论数
@@ -73,6 +80,9 @@ function formatGalleryItem(row, userId = null) {
     difficulty: row.difficulty || undefined,
     created_at: row.created_at,
     comments_count: commentsRow.cnt,
+    // Phase C: 积分锁
+    unlock_cost: row.unlock_cost ?? 0,
+    unlocked,
   };
 }
 
@@ -224,7 +234,18 @@ router.get('/:id', (req, res) => {
     const item = db.prepare('SELECT * FROM gallery WHERE id = ?').get(id);
     if (!item) return res.status(404).json({ code: 1, error: '作品不存在' });
 
-    res.json({ code: 0, data: formatGalleryItem(item, null) });
+    // 尝试从 auth header 获取 userId（可选，用于返回解锁状态）
+    let userId = null;
+    try {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.slice(7);
+        const decoded = jwt.verify(token, JWT_SECRET);
+        userId = decoded.id;
+      }
+    } catch { /* 未登录或 token 过期，userId 保持 null */ }
+
+    res.json({ code: 0, data: formatGalleryItem(item, userId) });
   } catch (err) {
     console.error('[GET /api/gallery/:id Error]', err.message);
     res.status(500).json({ code: 1, error: err.message });
@@ -416,6 +437,58 @@ router.get('/:id/comments', (req, res) => {
     res.json({ code: 0, data: comments, total, page: Number(page) });
   } catch (err) {
     console.error('[GET /api/gallery/comments Error]', err.message);
+    res.status(500).json({ code: 1, error: err.message });
+  }
+});
+
+// ============ POST /api/gallery/:id/unlock — 解锁作品（消耗积分，需登录） ============
+router.post('/:id/unlock', authMiddleware, (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ code: 1, error: '缺少作品 ID' });
+    const userId = req.user.id;
+
+    // 查作品
+    const item = db.prepare('SELECT id, unlock_cost FROM gallery WHERE id = ?').get(id);
+    if (!item) return res.status(404).json({ code: 1, error: '作品不存在' });
+    const cost = item.unlock_cost || 0;
+    if (cost <= 0) {
+      return res.json({ code: 0, data: { success: false, message: '该作品无需解锁' } });
+    }
+
+    // 幂等检查：已解锁则直接返回 success
+    const existing = db.prepare(
+      'SELECT id FROM gallery_unlocks WHERE gallery_id = ? AND user_id = ?'
+    ).get(id, userId);
+    if (existing) {
+      return res.json({ code: 0, data: { success: true, already_unlocked: true, message: '已解锁' } });
+    }
+
+    // 积分检查
+    const user = db.prepare('SELECT credits FROM users WHERE id = ?').get(userId);
+    if (!user || user.credits < cost) {
+      return res.json({
+        code: 0,
+        data: { success: false, message: `积分不足（当前 ${user?.credits ?? 0}，需要 ${cost}）` }
+      });
+    }
+
+    // 事务：扣分 + 解锁记录
+    const doUnlock = db.transaction(() => {
+      db.prepare('UPDATE users SET credits = credits - ? WHERE id = ?').run(cost, userId);
+      db.prepare(
+        'INSERT INTO gallery_unlocks (gallery_id, user_id, cost) VALUES (?, ?, ?)'
+      ).run(id, userId, cost);
+    });
+    doUnlock();
+
+    res.json({ code: 0, data: { success: true, message: '解锁成功' } });
+  } catch (err) {
+    console.error('[POST /api/gallery/unlock Error]', err.message);
+    // UNIQUE 约束冲突兜底（并发场景）
+    if (err.message?.includes('UNIQUE constraint')) {
+      return res.json({ code: 0, data: { success: true, already_unlocked: true, message: '已解锁' } });
+    }
     res.status(500).json({ code: 1, error: err.message });
   }
 });
