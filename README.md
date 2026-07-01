@@ -59,6 +59,26 @@ cd server && npm install && npm run dev
 
 ---
 
+## Provider 环境变量治理
+
+### Required (必须设置)
+- `JWT_SECRET` — 签名密钥。缺失时 server 拒绝启动，error 信息见 console
+
+### Optional (推荐设置)
+- `KIMI_API_KEY` — Kimi/Moonshot API Key。缺失时仅启动 warning，`/api/optimize` 及 `/api/kimi/chat` 不可用
+- `KLING_ACCESS_KEY` + `KLING_SECRET_KEY` — 可灵 AI API 密钥。缺失时仅启动 warning，`/api/kling/*` 不可用
+- `REPLICATE_API_KEY` — Replicate API Key。当前未正式启用，缺失仅 warning
+
+### 安全说明
+- ❌ 所有密钥通过 `.env` 文件注入或 `export` 设置，不得硬编码在源码中
+- ❌ `.env` 已通过 `.gitignore` 排除，不会提交到仓库
+- ❌ 勿将 `.env.example` 中的占位值直接用于生产
+- ❌ 勿在前端代码 (`src/lib/klingApi.ts`) 直接暴露 provider 密钥到浏览器端
+
+### Browser Direct Kling（开发/原型适用）
+- `src/lib/klingApi.ts` 提供浏览器端直接调用可灵 API 的客户端库，密钥存储于 `localStorage`
+- **⚠️ 仅限开发/原型验证**——生产环境应通过后端 `/api/kling/*` 代理调用，不可在前端暴露 API 密钥
+
 ## 待办 (未来阶段)
 
 - [ ] server/ 后端拆分为独立仓库
