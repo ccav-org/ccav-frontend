@@ -42,8 +42,18 @@ next-env.d.ts
 /dist
 /archive
 dist/
-# database
-server/ccav.db
-server/ccav.db-shm
-server/ccav.db-wal
-server/ccav.db.bak
+# build artifacts (Phase2-I S6 safety)
+*.tar.gz
+*.tar
+*.zip
+
+# backup files (Phase2-I S6 safety)
+*.bak
+*.bak*
+
+# database files (Phase2-I S6 safety)
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
