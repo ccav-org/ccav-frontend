@@ -188,4 +188,20 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_gallery_likes_gallery ON gallery_likes(gallery_id);
 `);
 
+// === Phase C: Gallery unlock (积分锁) ===
+const galleryColumns = db.pragma('table_info(gallery)');
+if (!galleryColumns.some(col => col.name === 'unlock_cost')) {
+  db.exec(`ALTER TABLE gallery ADD COLUMN unlock_cost INTEGER DEFAULT 0`);
+}
+db.exec(`
+  CREATE TABLE IF NOT EXISTS gallery_unlocks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    gallery_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    cost INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(gallery_id, user_id)
+  );
+`);
+
 export default db;
